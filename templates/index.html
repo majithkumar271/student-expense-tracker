@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">MY MONEY DIARY</p>
+                <h1>Where did my pocket money go?</h1>
+                <p class="subtitle">Track small spends, spot patterns, and stay in control.</p>
+            </div>
+            <div class="hero-icon">₹</div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <section class="stats">
+            <div class="stat-card purple"><span>Monthly total</span><strong>₹{{ '%.2f'|format(monthly_total) }}</strong><small>{{ selected_month }}</small></div>
+            <div class="stat-card orange"><span>Expenses logged</span><strong>{{ expenses|length }}</strong><small>in this view</small></div>
+            <div class="stat-card green"><span>Top category</span><strong>{{ category_totals[0].category if category_totals else '—' }}</strong><small>{% if category_totals %}₹{{ '%.2f'|format(category_totals[0].total) }}{% else %}No spending yet{% endif %}</small></div>
+        </section>
+
+        <div class="grid">
+            <section class="panel add-panel">
+                <div class="panel-heading"><div><p class="eyebrow">NEW ENTRY</p><h2>Add an expense</h2></div><span class="plus">+</span></div>
+                <form method="post" class="expense-form">
+                    <label>Amount (₹)<input type="number" name="amount" min="0.01" step="0.01" placeholder="e.g. 120" required></label>
+                    <label>Category<select name="category" required>{% for category in categories %}<option>{{ category }}</option>{% endfor %}</select></label>
+                    <label>Date<input type="date" name="expense_date" value="{{ today }}" required></label>
+                    <label>Note <span class="muted">(optional)</span><input type="text" name="note" maxlength="100" placeholder="What was it for?"></label>
+                    <button class="primary-button" type="submit">Add expense <span>→</span></button>
+                </form>
+            </section>
+
+            <section class="panel category-panel">
+                <div class="panel-heading"><div><p class="eyebrow">A QUICK LOOK</p><h2>By category</h2></div><span class="chart-icon">◒</span></div>
+                {% if category_totals %}
+                    {% for item in category_totals %}
+                        <div class="category-row"><div class="category-label"><span class="dot dot-{{ loop.index0 % 5 }}"></span>{{ item.category }}<b>₹{{ '%.2f'|format(item.total) }}</b></div><div class="bar"><i style="width: {{ (item.total / category_totals[0].total * 100) if category_totals[0].total else 0 }}%"></i></div></div>
+                    {% endfor %}
+                {% else %}<p class="empty">Add your first expense to see your spending breakdown.</p>{% endif %}
+            </section>
+        </div>
+
+        <section class="panel history-panel">
+            <div class="history-header"><div><p class="eyebrow">YOUR JOURNAL</p><h2>Recent expenses</h2></div><form method="get" class="filters"><label>Month<input type="month" name="month" value="{{ selected_month }}"></label><label>Category<select name="category"><option {% if category_filter == 'All' %}selected{% endif %}>All</option>{% for category in categories %}<option {% if category_filter == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select></label><button class="filter-button" type="submit">Filter</button></form></div>
+            {% if expenses %}
+                <div class="table-wrap"><table><thead><tr><th>DATE</th><th>DETAILS</th><th>CATEGORY</th><th class="amount-col">AMOUNT</th><th></th></tr></thead><tbody>{% for expense in expenses %}<tr><td>{{ expense.expense_date }}</td><td><strong>{{ expense.note or 'Untitled expense' }}</strong></td><td><span class="tag">{{ expense.category }}</span></td><td class="amount-col">₹{{ '%.2f'|format(expense.amount) }}</td><td><form method="post" action="{{ url_for('delete_expense', expense_id=expense.id) }}"><button class="delete-button" title="Delete expense" onclick="return confirm('Delete this expense?')">×</button></form></td></tr>{% endfor %}</tbody></table></div>
+            {% else %}<div class="empty empty-history"><span>✦</span><p>No expenses found for this filter.</p></div>{% endif %}
+        </section>
+        <footer>Student Expense Tracker · Runs locally on your computer</footer>
+    </main>
+</body>
+</html>
